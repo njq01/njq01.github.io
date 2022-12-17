@@ -1,0 +1,164 @@
+<!DOCTYPE html><html lang="zh-Hans" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>在SNI审查下的方法 | 青鸟の小屋</title><meta name="author" content="青鸟"><meta name="copyright" content="青鸟"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="作者 青鸟 为了避免误会，本文中不会提供具体的方法，有兴趣的朋友可以自行baidu，本文只是对SNI技术的分析，以及其衍生问题的讨论。文中以pixiv来举例分析。本文可能会有一些不严谨的地方，欢迎大家指出。  一些专业名词的介绍 HTTP（Hyper Text Transfer Protocol）超文本传输协议，日常浏览的各种网页都是通过HTTP协议传输，但是它的传输过程没有加密，不安全。目前所说">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在SNI审查下的方法">
+<meta property="og:url" content="http://www.bluebird.com/20721/index.html">
+<meta property="og:site_name" content="青鸟の小屋">
+<meta property="og:description" content="作者 青鸟 为了避免误会，本文中不会提供具体的方法，有兴趣的朋友可以自行baidu，本文只是对SNI技术的分析，以及其衍生问题的讨论。文中以pixiv来举例分析。本文可能会有一些不严谨的地方，欢迎大家指出。  一些专业名词的介绍 HTTP（Hyper Text Transfer Protocol）超文本传输协议，日常浏览的各种网页都是通过HTTP协议传输，但是它的传输过程没有加密，不安全。目前所说">
+<meta property="og:locale">
+<meta property="og:image" content="http://www.bluebird.com/img/35.png">
+<meta property="article:published_time" content="2022-12-17T02:40:04.000Z">
+<meta property="article:modified_time" content="2022-12-17T05:07:31.459Z">
+<meta property="article:author" content="青鸟">
+<meta property="article:tag" content="开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.bluebird.com/img/35.png"><link rel="shortcut icon" href="/img/touxiang.jpg"><link rel="canonical" href="http://www.bluebird.com/20721/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '在SNI审查下的方法',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-12-17 13:07:31'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/touxiang.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">5</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/messageboard/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20221110162011.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">青鸟の小屋</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/messageboard/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">在SNI审查下的方法</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-12-17T02:40:04.000Z" title="Created 2022-12-17 10:40:04">2022-12-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-12-17T05:07:31.459Z" title="Updated 2022-12-17 13:07:31">2022-12-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%BC%80%E5%8F%91/">开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">794</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>2min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="在SNI审查下的方法"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>作者 <a target="_blank" rel="noopener" href="http://www.bluebird.icu/">青鸟</a></p>
+<p>为了避免误会，本文中不会提供具体的方法，有兴趣的朋友可以自行baidu，本文只是对SNI技术的分析，以及其衍生问题的讨论。文中以pixiv来举例分析。本文可能会有一些不严谨的地方，欢迎大家指出。</p>
+<blockquote>
+<h2 id="一些专业名词的介绍"><a href="#一些专业名词的介绍" class="headerlink" title="一些专业名词的介绍"></a>一些专业名词的介绍</h2></blockquote>
+<h3 id="HTTP（Hyper-Text-Transfer-Protocol）"><a href="#HTTP（Hyper-Text-Transfer-Protocol）" class="headerlink" title="HTTP（Hyper Text Transfer Protocol）"></a><strong>HTTP（Hyper Text Transfer Protocol）</strong></h3><p>超文本传输协议，日常浏览的各种网页都是通过HTTP协议传输，但是它的传输过程没有加密，不安全。<br>目前所说的支持HTTP一般是指HTTP和HTTPS功能都可以实现，而不是单单支持HTTP。</p>
+<h3 id="TLS（Transport-Layer-Security）"><a href="#TLS（Transport-Layer-Security）" class="headerlink" title="TLS（Transport Layer Security）"></a><strong>TLS（Transport Layer Security）</strong></h3><p>安全传输层，它的前身是SSL，它实现了将报文加密后再交由TCP进行传输的功能。即HTTP + TLS &#x3D; HTTPS</p>
+<h3 id="SNI（Server-Name-Indication）"><a href="#SNI（Server-Name-Indication）" class="headerlink" title="SNI（Server Name Indication）"></a><strong>SNI（Server Name Indication）</strong></h3><p>服务器名称指示。SNI是为了解决一个服务器使用多个域名和证书的SSL&#x2F;TLS的一个拓展，它允许服务器在同一个IP地址和TCP端口下支持多张证书，从而允许多个HTTPS，或其他服务在TLS的网站，可以在同一个IP地址下请求不同的服务。</p>
+<p>简单来说，是用于在一台服务器的相同端口上部署不同证书的方法。服务器根据收到请求中的SNI域名来处理相应的请求，如果SNI域名为空，会按照预先设置好的默认域名处理请求。</p>
+<h3 id="CDN（Content-Delivery-Network）"><a href="#CDN（Content-Delivery-Network）" class="headerlink" title="CDN（Content Delivery Network）"></a><strong>CDN（Content Delivery Network）</strong></h3><p>内容分发网络，各个地区部署的服务器在一起形成的高速网络拓扑，用户在每个地区都能实现快速访问。CDN通过SNI响应不同的网站，同时也保护根服务器的安全。</p>
+<h3 id="Nginx"><a href="#Nginx" class="headerlink" title="Nginx"></a><strong>Nginx</strong></h3><p>主流的高性能开源HTTP反向代理工具，主要用于反向代理、负载均衡和动静态资源分离。</p>
+<h3 id="反向代理"><a href="#反向代理" class="headerlink" title="反向代理"></a><strong>反向代理</strong></h3><p>在根服务器前部署一台外层服务器做为网关，用户只能访问到外层服务器，从而保护内网服务器不被暴露。做为网关，也可以对报文分析和修改。</p>
+<p>代理服务器和根服务器部署在一台主机上称为本地反代。</p>
+<blockquote>
+<h2 id="目前的主流屏蔽技术"><a href="#目前的主流屏蔽技术" class="headerlink" title="目前的主流屏蔽技术"></a>目前的主流屏蔽技术</h2></blockquote>
+<p>这里粗略的讲一下技术至于更详细的，请自行<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Great_Firewall">百度一下</a></p>
+<p>在目前的生活中，GFW屏蔽违规网站主要有两种方法：1.DNS污染，2.TCP重置攻击。</p>
+<h3 id="DNS污染"><a href="#DNS污染" class="headerlink" title="DNS污染"></a>DNS污染</h3><p>主要是检查HTTP报文中的关键字来拦截相应网站中的内容，浏览器访问时会出现<code>ERR_CONNECTION_TIMED_OUT</code>的错误，因为DNS会被指向一个不可访问的地址，访问也就超时了。对于这个问题的解决方法是在本地做好解析，通过修改本地的Hosts文件使用ip直连。</p>
+<p>但是，在目前的生活中，使用DNS污染的方法在大型网站的屏蔽中已经很少见了，其主要原因是HTTPS会对浏览内容进行加密，报文检测关键字的方法也就失效了。</p>
+<h3 id="SNI审查方法"><a href="#SNI审查方法" class="headerlink" title="SNI审查方法"></a>SNI审查方法</h3><p><a href="/img/sni/1.jpg"></a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="http://www.bluebird.com">青鸟</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://www.bluebird.com/20721/">http://www.bluebird.com/20721/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%BC%80%E5%8F%91/">开发</a></div><div class="post_share"><div class="social-share" data-image="/img/35.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/61435/"><img class="next-cover" src="/img/28.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">在浏览器中输入URL后会发生什么呢？</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/44512/" title="MVC框架和RUST框架"><img class="cover" src="/img/12.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-12</div><div class="title">MVC框架和RUST框架</div></div></a></div><div><a href="/61435/" title="在浏览器中输入URL后会发生什么呢？"><img class="cover" src="/img/28.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-16</div><div class="title">在浏览器中输入URL后会发生什么呢？</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/touxiang.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">青鸟</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:crk2778355976@163.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">这是青鸟的Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E4%B8%93%E4%B8%9A%E5%90%8D%E8%AF%8D%E7%9A%84%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">一些专业名词的介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#HTTP%EF%BC%88Hyper-Text-Transfer-Protocol%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">HTTP（Hyper Text Transfer Protocol）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TLS%EF%BC%88Transport-Layer-Security%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">TLS（Transport Layer Security）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SNI%EF%BC%88Server-Name-Indication%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">SNI（Server Name Indication）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CDN%EF%BC%88Content-Delivery-Network%EF%BC%89"><span class="toc-number">1.4.</span> <span class="toc-text">CDN（Content Delivery Network）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Nginx"><span class="toc-number">1.5.</span> <span class="toc-text">Nginx</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86"><span class="toc-number">1.6.</span> <span class="toc-text">反向代理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%89%8D%E7%9A%84%E4%B8%BB%E6%B5%81%E5%B1%8F%E8%94%BD%E6%8A%80%E6%9C%AF"><span class="toc-number">2.</span> <span class="toc-text">目前的主流屏蔽技术</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DNS%E6%B1%A1%E6%9F%93"><span class="toc-number">2.1.</span> <span class="toc-text">DNS污染</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SNI%E5%AE%A1%E6%9F%A5%E6%96%B9%E6%B3%95"><span class="toc-number">2.2.</span> <span class="toc-text">SNI审查方法</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/20721/" title="在SNI审查下的方法"><img src="/img/35.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="在SNI审查下的方法"/></a><div class="content"><a class="title" href="/20721/" title="在SNI审查下的方法">在SNI审查下的方法</a><time datetime="2022-12-17T02:40:04.000Z" title="Created 2022-12-17 10:40:04">2022-12-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/61435/" title="在浏览器中输入URL后会发生什么呢？"><img src="/img/28.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="在浏览器中输入URL后会发生什么呢？"/></a><div class="content"><a class="title" href="/61435/" title="在浏览器中输入URL后会发生什么呢？">在浏览器中输入URL后会发生什么呢？</a><time datetime="2022-12-16T13:11:31.000Z" title="Created 2022-12-16 21:11:31">2022-12-16</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20221110162011.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022 By 青鸟</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

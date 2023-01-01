@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="zh-Hans" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>简单的搜索引擎原理 | 青鸟の小屋</title><meta name="author" content="青鸟"><meta name="copyright" content="青鸟"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="作者 青鸟  布隆过滤器（Bloom Filter） 它实际上是一个很长的二进制向量和一系列随机映射函数。布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是空间效率和查询时间都比一般的算法要好的多，缺点是有一定的误识别率和删除困难。 常见的储存数据的方式是集合、链表、树这种在数组的基础上构建而成的数据结构。但是这一类数据结构的查询元素的效率会随着空间储存的增长而随之变慢。这时候，我们引入一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="简单的搜索引擎原理">
+<meta property="og:url" content="http://www.bluebird.com/26253/index.html">
+<meta property="og:site_name" content="青鸟の小屋">
+<meta property="og:description" content="作者 青鸟  布隆过滤器（Bloom Filter） 它实际上是一个很长的二进制向量和一系列随机映射函数。布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是空间效率和查询时间都比一般的算法要好的多，缺点是有一定的误识别率和删除困难。 常见的储存数据的方式是集合、链表、树这种在数组的基础上构建而成的数据结构。但是这一类数据结构的查询元素的效率会随着空间储存的增长而随之变慢。这时候，我们引入一">
+<meta property="og:locale">
+<meta property="og:image" content="http://www.bluebird.com/img/36.png">
+<meta property="article:published_time" content="2023-01-01T06:35:52.000Z">
+<meta property="article:modified_time" content="2023-01-01T08:14:06.598Z">
+<meta property="article:author" content="青鸟">
+<meta property="article:tag" content="网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.bluebird.com/img/36.png"><link rel="shortcut icon" href="/img/touxiang.jpg"><link rel="canonical" href="http://www.bluebird.com/26253/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '简单的搜索引擎原理',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-01-01 16:14:06'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/touxiang.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">7</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">7</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/messageboard/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20221110162011.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">青鸟の小屋</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/messageboard/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">简单的搜索引擎原理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2023-01-01T06:35:52.000Z" title="Created 2023-01-01 14:35:52">2023-01-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2023-01-01T08:14:06.598Z" title="Updated 2023-01-01 16:14:06">2023-01-01</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%BD%91%E7%BB%9C/">网络</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>8min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="简单的搜索引擎原理"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>作者 <a target="_blank" rel="noopener" href="http://www.bluebird.icu/">青鸟</a></p>
+<blockquote>
+<h2 id="布隆过滤器（Bloom-Filter）"><a href="#布隆过滤器（Bloom-Filter）" class="headerlink" title="布隆过滤器（Bloom Filter）"></a>布隆过滤器（Bloom Filter）</h2></blockquote>
+<p>它实际上是一个很长的二进制向量和一系列随机映射函数。布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是空间效率和查询时间都比一般的算法要好的多，缺点是有一定的误识别率和删除困难。</p>
+<p>常见的储存数据的方式是集合、链表、树这种在数组的基础上构建而成的数据结构。但是这一类数据结构的查询元素的效率会随着空间储存的增长而随之变慢。这时候，我们引入一种新的储存方式，<strong>散列表</strong> (也就是哈希表)。它可以通过一个Hash函数将一个元素映射成一个位阵列（Bit array）中的一个点。这样一来，我们只要看看这个点是不是1就可以知道集合中有没有它了。这就是布隆过滤器的基本思想。</p>
+<p>存入过程：<br>布隆过滤器上面说了，就是一个二进制数据的集合。当一个数据加入这个集合时，经历如下洗礼：</p>
+<ol>
+<li><p>通过K个哈希函数计算该数据，返回K个计算出的hash值</p>
+</li>
+<li><p>这些K个hash值映射到对应的K个二进制的数组下标</p>
+</li>
+<li><p>将K个下标对应的二进制数据改成1。</p>
+</li>
+</ol>
+<p>布隆过滤器主要作用就是查询一个数据，在不在这个二进制的集合中，查询过程如下：</p>
+<ol>
+<li><p>通过K个哈希函数计算该数据，对应计算出的K个hash值</p>
+</li>
+<li><p>通过hash值找到对应的二进制的数组下标</p>
+</li>
+<li><p>判断：如果存在一处位置的二进制数据是0，那么该数据不存在。如果都是1，该数据存在集合中。</p>
+</li>
+</ol>
+<p>看到这里，大家应该可以看出，如果布隆过滤器返回0，那么数据一定是没有索引过的，然而如果返回1，那也不能说数据一定就已经被索引过。在搜索过程中使用布隆过滤器可以使得很多没有命中的搜索提前返回来提高效率。</p>
+<p>布隆过滤器的误判率主要是由对应的hash函数决定的，而hash函数又是由内存所决定的。</p>
+<p>布隆过滤器在搜索引擎中的主要作用是url去重。可以快速并且非常节省内存地实现网页的判重。</p>
+<blockquote>
+<h2 id="倒排索引"><a href="#倒排索引" class="headerlink" title="倒排索引"></a>倒排索引</h2></blockquote>
+<h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><p>倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。通过倒排索引，可以根据单词快速获取包含这个单词的文档列表。倒排索引主要由两个部分组成：“单词词典”和“倒排文件”。</p>
+<p>简单来说：</p>
+<p>在没有搜索引擎时，我们是直接输入一个网址，然后获取网站内容，这时我们的行为是：</p>
+<p>document -&gt; to -&gt; words</p>
+<p>通过文章，获取里面的单词，此谓正向索引，forward index.</p>
+<p>后来，我们希望能够输入一个单词，找到含有这个单词，或者和这个单词有关系的文章：</p>
+<p>word -&gt; to -&gt; documents</p>
+<p>这就是倒排序索引</p>
+<p>倒排列表用来记录有哪些文档包含了某个单词。一般在文档集合里会有很多文档包含某个单词，每个文档会记录文档编号（DocID），单词在这个文档中出现的次数（TF）及单词在文档中哪些位置出现过等信息，这样与一个文档相关的信息被称做倒排索引项（Posting），包含这个单词的一系列倒排索引项形成了列表结构，这就是某个单词对应的倒排列表。在文档集合中出现过的所有单词及其对应的倒排列表组成了倒排索引。 </p>
+<p><img src="/img/search/1.jpg"></p>
+<p>在实际的搜索引擎系统中，并不存储倒排索引项中的实际文档编号，而是代之以文档编号差值（D-Gap）。文档编号差值是倒排列表中相邻的两个倒排索引项文档编号的差值，一般在索引构建过程中，可以保证倒排列表中后面出现的文档编号大于之前出现的文档编号，所以文档编号差值总是大于0的整数。如图2所示的例子中，原始的 3个文档编号分别是187、196和199，通过编号差值计算，在实际存储的时候就转化成了：187、9、3。之所以要对文档编号进行差值计算，主要原因是为了更好地对数据进行压缩，原始文档编号一般都是大数值，通过差值计算，就有效地将大数值转换为了小数值，而这有助于增加数据的压缩率。</p>
+<p>现代搜索引擎的索引都是基于倒排索引。相比“签名文件”、“后缀树”等索引结构，“倒排索引”是实现单词到文档映射关系的最佳实现方式和最有效的索引结构。</p>
+<h3 id="实现方法"><a href="#实现方法" class="headerlink" title="实现方法"></a>实现方法</h3><p>分析完网页后，我们得到了一篇文章，对文章分词。</p>
+<ol>
+<li>将文档分析成单词term标记，</li>
+<li>使用hash去重单词term</li>
+<li>对单词生成倒排列表</li>
+</ol>
+<p>这便简单的生成了一个倒排索引。之后便能够由查询词快速(时间复杂度O(1))找到包含这个查询词的网页了</p>
+<blockquote>
+<h2 id="搜索引擎的简单搭建"><a href="#搜索引擎的简单搭建" class="headerlink" title="搜索引擎的简单搭建"></a>搜索引擎的简单搭建</h2></blockquote>
+<h3 id="搜集网页的信息并处理对应关系"><a href="#搜集网页的信息并处理对应关系" class="headerlink" title="搜集网页的信息并处理对应关系"></a>搜集网页的信息并处理对应关系</h3><p>我们使用广度优先算法来搜集网页的信息。整个互联网可以看作是数据结构中的有向图，把每个页面看作一个顶点，如果某个页面中包含另外一个页面的链接，那我们就在两个顶点之间连一条有向边。先找一些权重比较高的链接，作为种子网页链接，放入队列中。爬虫按照广度优先的策略，不停的从队列中取出链接，然后爬取相应的网页，解析出网页里包含的其他网页链接，再将解析出来的链接添加到队列中，以此来遍历整个互联网。</p>
+<p>我们使用布隆过滤器来对得到的网页链接判重，以此优化速度。</p>
+<p>网页编号实际上就是给每个网页分配一个唯一的ID，方便我们后续对网页进行分析、索引。</p>
+<p>我们给网页的每一个链接分配一个编号。我们维护一个中心的计数器，每爬取到一个网页之后，就从计数器中拿一个号码，分配给这个网页，然后计数器加一。在存储网页的同时，我们将网页链接跟编号之前的对应关系，存储在另一个<strong>docid文件</strong>中。</p>
+<p>接下来我们分析网页中的内容。</p>
+<p>首先我们抽取网页的基本信息。第一步：去掉JavaScript代码、CSS格式以及下拉框中的内容。也就是,,这三组标签之间的内容。可以利用AC自动机实现。第二步：去掉所有HTML标签。可以通过字符串匹配算法来实现。</p>
+<p>之后，我们对得到文本进行分词。分词我们使用比较简单的思路：使用基于字典和规则的分词方法。我们可以直接从网上下载别人整理好的字典（词库）、我们采用最长匹配规则，来对文本进行分词；我们可以将词库中的单词，构建成Trie树结构，然后拿网页文本在Trie树中匹配。每个网页的文本信息在分词完成之后，我们都得到一组单词列表。然后对每个单词分配编号。用一个散列表来维护得到的单词和编号的对应关系，也就是<strong>termid表</strong></p>
+<p>我们先对临时索引文件，按照单词编号的大小进行排序。临时索引文件很大，所以一般基于内存的排序算法就没法处理这个问题了。我们可以用归并排序的处理思想，将其分割成多个小文件，先对每个小文件独立排序，最后再合并在一起。临时索引文件排序完成之后，相同的单词就被排列到了一起，我们只需要顺序地遍历排好序的临时索引文件，就能将每个单词对应的网页编号列表找出来，由于一个单词可以对赢多个网页，我们不妨让一个单词对应一个集合。然后把它们存储到倒排索引文件<strong>index</strong>中。此时的index文件中储存了所有单词所出现的对应文章的集合。为了帮助我们快速地查找某个单词编号在倒排索引中存储的位置，我们建立一个从倒排索引中读取单词编号对应的网页编号列表<strong>term_offset表</strong>。列表里面存的是在倒排序文件中对应的偏离位置，以此来压缩数据</p>
+<p><img src="/img/search/2.png"></p>
+<h3 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h3><p>我们需要用到上述中的四个文件：<strong>docid文件</strong>、<strong>termid表</strong>、<strong>index</strong>、<strong>term_offset表</strong>。</p>
+<ol>
+<li><p>我们拿到用户的搜索框文本后，先进性切词处理。假设得到了n个单词。</p>
+</li>
+<li><p>我们拿着这n个单词从termid表中得到单词对应的n个编号</p>
+</li>
+<li><p>我们拿着这n个编号，从去term_offset表中查询得到n个在倒排序索引中的偏移位置。</p>
+</li>
+<li><p>我们通过这n个偏移位置从index中得到每一个单词所对应的网页编号集合。</p>
+</li>
+<li><p>我们针对这n个集合。统计每个网页编号出现的次数。具体实现，我们可以借助散列表来进行统计。统计得到的结果，我们按照出现次数的多少，从小到大排序。出现次数越多，说明包含越多的用户查询单词。</p>
+</li>
+<li><p>经过这一系列查询，我们就得到了一组排好序的网页编号。我们拿着网页编号，去docid文件中查找对应的网页链接，分页显示给用户就可以了。</p>
+</li>
+</ol>
+<p>这样子，我们就实现了一个简单的搜索引擎。<br><br/></p>
+<br/>
+
+<p>参考文章：</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_28673091/article/details/96432365">搜索引擎的原理实现</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_37340229/article/details/127927597?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-0-127927597-blog-96432365.pc_relevant_recovery_v2&spm=1001.2101.3001.4242.1&utm_relevant_index=3">[计算机毕业设计]搜索引擎的设计与实现</a></p>
+<p><a target="_blank" rel="noopener" href="http://t.zoukankan.com/itlaoge-p-14219693.html">布隆过滤器详解，全网最全一篇</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a target="_blank" rel="noopener" href="http://www.bluebird.icu/">青鸟</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://www.bluebird.com/26253/">http://www.bluebird.com/26253/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%BD%91%E7%BB%9C/">网络</a></div><div class="post_share"><div class="social-share" data-image="/img/36.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/54180/"><img class="next-cover" src="/img/15.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">关于Spring的学习</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/17625/" title="关于session的学习"><img class="cover" src="/img/30.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-21</div><div class="title">关于session的学习</div></div></a></div><div><a href="/20721/" title="在SNI审查下的方法"><img class="cover" src="/img/35.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-17</div><div class="title">在SNI审查下的方法</div></div></a></div><div><a href="/61435/" title="在浏览器中输入URL后会发生什么呢？"><img class="cover" src="/img/28.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-12-16</div><div class="title">在浏览器中输入URL后会发生什么呢？</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/touxiang.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">青鸟</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">7</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="mailto:crk2778355976@163.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">这是青鸟的Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%EF%BC%88Bloom-Filter%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">布隆过滤器（Bloom Filter）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="toc-number">2.</span> <span class="toc-text">倒排索引</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="toc-number">2.1.</span> <span class="toc-text">基本概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="toc-number">2.2.</span> <span class="toc-text">实现方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E7%AE%80%E5%8D%95%E6%90%AD%E5%BB%BA"><span class="toc-number">3.</span> <span class="toc-text">搜索引擎的简单搭建</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%90%9C%E9%9B%86%E7%BD%91%E9%A1%B5%E7%9A%84%E4%BF%A1%E6%81%AF%E5%B9%B6%E5%A4%84%E7%90%86%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB"><span class="toc-number">3.1.</span> <span class="toc-text">搜集网页的信息并处理对应关系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2"><span class="toc-number">3.2.</span> <span class="toc-text">查询</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/26253/" title="简单的搜索引擎原理"><img src="/img/36.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="简单的搜索引擎原理"/></a><div class="content"><a class="title" href="/26253/" title="简单的搜索引擎原理">简单的搜索引擎原理</a><time datetime="2023-01-01T06:35:52.000Z" title="Created 2023-01-01 14:35:52">2023-01-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/54180/" title="关于Spring的学习"><img src="/img/15.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="关于Spring的学习"/></a><div class="content"><a class="title" href="/54180/" title="关于Spring的学习">关于Spring的学习</a><time datetime="2022-12-25T06:17:22.000Z" title="Created 2022-12-25 14:17:22">2022-12-25</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20221110162011.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By 青鸟</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
